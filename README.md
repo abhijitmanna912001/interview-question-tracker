@@ -23,7 +23,6 @@ The Interview Question Tracker helps candidates record solved interview problems
 - Authentication
 - Docker
 - Redis
-- Cloud deployment
 - Multi-user accounts
 - Enterprise-grade permissions or analytics
 
@@ -107,6 +106,7 @@ Default value:
 ```text
 DATABASE_URL=postgres://localhost:5432/interview_tracker
 PORT=5001
+FRONTEND_ORIGIN=http://localhost:5173
 ```
 
 Adjust the `DATABASE_URL` if your local PostgreSQL user/password setup requires it.
@@ -131,6 +131,81 @@ npm run dev
 
 Backend: `http://localhost:5001`  
 Frontend: `http://localhost:5173`
+
+## Deployment
+
+Target deployment:
+
+- Frontend: Vercel
+- Backend: Render
+- Database: Neon PostgreSQL
+
+### 1. Create a Neon database
+
+Create a Neon PostgreSQL project and copy the connection string. It should look similar to:
+
+```text
+postgresql://USER:PASSWORD@HOST.neon.tech/DBNAME?sslmode=require
+```
+
+Run the schema against Neon:
+
+```bash
+DATABASE_URL='postgresql://USER:PASSWORD@HOST.neon.tech/DBNAME?sslmode=require' npm run db:schema --prefix backend
+```
+
+### 2. Deploy the backend to Render
+
+Create a Render Web Service with these settings:
+
+```text
+Root Directory: backend
+Build Command: npm install && npm run build
+Start Command: npm start
+```
+
+Add these environment variables in Render:
+
+```text
+DATABASE_URL=postgresql://USER:PASSWORD@HOST.neon.tech/DBNAME?sslmode=require
+FRONTEND_ORIGIN=https://your-vercel-app.vercel.app
+NODE_ENV=production
+```
+
+Render provides `PORT` automatically, so do not hardcode it in production.
+
+After deployment, verify:
+
+```text
+https://your-render-service.onrender.com/api/health
+```
+
+### 3. Deploy the frontend to Vercel
+
+Create a Vercel project with these settings:
+
+```text
+Root Directory: frontend
+Build Command: npm run build
+Output Directory: dist
+```
+
+Add this environment variable in Vercel:
+
+```text
+VITE_API_URL=https://your-render-service.onrender.com/api
+```
+
+Redeploy the frontend after setting `VITE_API_URL`, then update Render's `FRONTEND_ORIGIN` with the final Vercel URL if it changed.
+
+### Deployment checklist
+
+- Neon database is created.
+- `backend/src/db/schema.sql` has been run against Neon.
+- Render backend has `DATABASE_URL`, `FRONTEND_ORIGIN`, and `NODE_ENV=production`.
+- Render health check returns `{ "status": "ok", "database": "connected" }`.
+- Vercel frontend has `VITE_API_URL` pointing to the Render `/api` URL.
+- The deployed UI can add, list, filter, update status, delete, and update solved count.
 
 ## Optional Demo Data
 

@@ -6,8 +6,7 @@ interface StatusBadgeProps {
 }
 
 export const StatusBadge = ({ label, type }: StatusBadgeProps) => {
-  const className = `badge badge-${type}-${label.toLowerCase().replaceAll(" ", "-")}`;
+  const className = `badge badge-${type}-${label.toLowerCase().replace(/ /g, "-")}`;
 
   return <span className={className}>{label}</span>;
 };
-
